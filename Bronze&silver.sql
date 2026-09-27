@@ -1,15 +1,24 @@
 create database Hotel_DB;
+
+CREATE or replace STORAGE INTEGRATION azure_adls
+TYPE = EXTERNAL_STAGE
+STORAGE_PROVIDER = 'AZURE'
+ENABLED = TRUE
+AZURE_TENANT_ID = 'ebfabf26-4e7f-4ae3-ac03-c3d71766e261' --tenant id from that azure account
+STORAGE_ALLOWED_LOCATIONS = (
+    'azure://saazureproject.blob.core.windows.net/bronze/customers/'  --location where data is present
+);
+
+CREATE OR REPLACE STAGE adls_bronze_stage  --create a external stage 
+URL = 'azure://saazureproject.blob.core.windows.net/bronze/customers/'
+STORAGE_INTEGRATION = azure_adls;
+LIST @adls_bronze_stage;
 create or replace file format FF_CSV
     type = 'CSV'
     field_optionally_enclosed_by='''' --if anyname in the table is in quotes ignore quotes and load only text.
     Skip_header=1  --headings will be not loaded as data
     NULL_if=('NULL','null','') --replace the data if it is null with NULL
-
-
-create or replace STAGE STG_HOTEL_BOOKINGS
-    FILE_FORMAT= FF_CSV;
-
-create table Bronze_Hotel_booking(
+create or replace table Bronze_Hotel_booking(
 booking_id STRING,
 hotel_id STRING,
 hotel_city	STRING,
@@ -25,15 +34,17 @@ currency STRING,
 booking_status STRING
 );
 
-COPY INTO HOTEL_DB.PUBLIC.BRONZE_HOTEL_BOOKING
-FROM @STG_HOTEL_BOOKINGS
-FILE_FORMAT=FF_CSV
-ON_ERROR='CONTINUE'
+COPY INTO Bronze_Hotel_booking
+FROM @adls_bronze_stage
+files=('hotel_bookings_raw.csv')
+FILE_FORMAT = FF_CSV
+ON_ERROR = 'ABORT_STATEMENT';
+
 
 SELECT * from BRONZE_HOTEL_BOOKING limit 50;
 
 
-create table SILVER_HOTEL_BOOKINGS(
+create or replace table SILVER_HOTEL_BOOKINGS(
  bookingid VARCHAR,
  hotel_id VARCHAR,
  hotel_city	VARCHAR,
