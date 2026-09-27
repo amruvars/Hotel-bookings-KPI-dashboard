@@ -1,5 +1,5 @@
 use database hotel_db;
-create table GOLD_AGG_DAILY_BOOKINGS AS
+create or replace table GOLD_AGG_DAILY_BOOKINGS AS
 SELECT 
     check_in_date as DATE,
     Count(*) AS total_booking,
@@ -18,7 +18,7 @@ from silver_hotel_bookings
 GROUP BY hotel_city
 order by total_revenue desc;
 
-create table GOLD_BOOKING_CLEAN AS
+create or replace table GOLD_BOOKING_CLEAN AS
 SELECT 
  bookingid,
  hotel_id,
